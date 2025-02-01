@@ -6,9 +6,9 @@ from jinja2 import Environment, FileSystemLoader
 import cgi,sys
 import magic,time,uuid
 try:
-    from urllib.parse import parse_qs
+    from urllib.parse import parse_qs,unquote
 except ImportError:
-    from urlparse import parse_qs
+    from urlparse import parse_qs,unquote
 
 
 __version__="0.01"
@@ -58,11 +58,13 @@ pagefunc={
     "POST":nodatafunc,
     "PUT":nodatafunc,
     "DELETE":nodatafunc,
+    "WebSocket":None,
     }
 
 setting={}
 
 setting["template"]="./"
+setting["static_folder"]="./static/"
 
 session={}
 
@@ -170,7 +172,6 @@ def app(environ, start_response):
     print(session)
     returns=pagefunc[environ["REQUEST_METHOD"]](e)
     #aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-
     if type(returns)==dict or type(returns)==list:
         headers = [('Content-type', 'applicaion/json;')]
         ret = [("%s\n" % (text,)).encode("utf-8")
@@ -186,6 +187,8 @@ def app(environ, start_response):
     elif type(returns)==responce:
         headers = [('Content-type', f'{returns.datas};')]
         ret = [bytes(returns.data)]
+    elif ee[1][0:8]=="static/":
+        print(ee[1][8:])
     else:
         ret = [("%s\n" % (text,)).encode("utf-8")
            for text in [str(returns)]]
@@ -196,9 +199,98 @@ def run(port):
         print(f"Serving on port {port}...")
         httpd.serve_forever()
 
-if __name__=="__main__":
+async def speedapp_http(scope,receive,send):
+    if True:
+        global headers
+        headers=[['content-type', 'text/html;charset=utf-8']]
+        more_body = True
+        body=b""
+        while more_body:
+            msg = await receive()
+            body += msg.get('body', b'')
+            more_body = msg.get('more_body', False)
+        print(str(body)[1:])
+
+        def txtorint(x):
+            try:
+                return chr(int(x))
+            except:
+                return x
+        try:
+            body=dict([[i.split("=")[0],"".join([txtorint(i) for i in unquote(i.split("=")[1]).replace("&#","").split(";")])] for i in str(body)[2:-1].split("&")])
+        except:
+            body={}
+        
+        print(body)
+        try:
+            datas=dict([i.split("=") for i in str(scope["query_string"]).split("&")])
+        except:
+            datas={}
+        e = request(scope["method"],
+                    scope["path"],
+                    scope["client"],
+                    str(scope["headers"][3][1]),
+                    scope["server"][0],
+                    dict({}),
+                    scope,
+                    datas,
+                    body,
+                    None)
+        returns = await pagefunc[scope["method"]](e)
+        await send({
+        'type': 'http.response.start',
+        'status': 200,
+        'headers': 
+            [[str(i2).encode("utf-8") for i2 in i] for i in headers]
+        
+    })
+        if type(returns)==file:
+            stats = os.stat(returns.filename)
+            headers[0] = ['content-type', f'{returns.mimetype};']
+            print(headers)
+            with open(returns.filename,mode='br') as f:
+                returns = bytes(f.read())
+        else:
+            retuens=returns.encode()
+        await send({
+            'type': 'http.response.body',
+            'body': returns,
+        })
+async def speedapp(scope, receive, send):
+    if scope['type'] == 'http':
+        await speedapp_http(scope, receive, send)
+    elif scope["type"]=="websocket" and pagefunc["WebSocket"]:
+        async def aaaaaaaa():
+            while True:
+                event = await receive()
+        
+                if event['type'] == 'websocket.connect':
+                    await pagefunc["WebSocket"].connect(send,event)
+    
+                if event['type'] == 'websocket.disconnect':
+                    await pagefunc["WebSocket"].disconnect(send,event)
+                    break #強制切断
+        
+                if event['type'] == 'websocket.receive':
+                    await pagefunc["WebSocket"].receive(send,event)
+        await aaaaaaaa()
+
+"""if True:
+    #__name__=="__main__":
+    @get
+    async def getaa(e):
+        cookie_make("hello","pinko")
+        #return """<form method="post"><input name="aa"><input type="submit">"""
+        return file("新しいテキスト ドキュメント.txt")
+    @post
+    async def getaa(e):
+        return f"""{str(e.post)}<form method="post"><input name="bb"><input name="aa"><input type="submit">"""
+
+    appl=speedapp
+    """"""
     cli=sys.argv
     if cli[1]=="--set":
         while True:
             time.sleep(int(cli[3]))
             os.system(cli[2])
+"""
