@@ -49,7 +49,30 @@ class file():
         self.filename=filename
         if not name:
             self.name=filename
-        
+class WebsocketObject():
+    def __init__(self):
+        pass
+    def disconnect_set(self,func):
+        global pagefunc
+        def wrapper():
+            global pagefunc
+            self.disconnect=func
+        wrapper()
+        return wrapper
+    def receive_set(self,func):
+        global pagefunc
+        def wrapper():
+            global pagefunc
+            self.receive=func
+        wrapper()
+        return wrapper
+    def connect_set(self,func):
+        global pagefunc
+        def wrapper():
+            global pagefunc
+            self.connect=func
+        wrapper()
+        return wrapper
 def nodatafunc(aa):
     return "NoData"
 
@@ -237,13 +260,6 @@ async def speedapp_http(scope,receive,send):
                     body,
                     None)
         returns = await pagefunc[scope["method"]](e)
-        await send({
-        'type': 'http.response.start',
-        'status': 200,
-        'headers': 
-            [[str(i2).encode("utf-8") for i2 in i] for i in headers]
-        
-    })
         if type(returns)==file:
             stats = os.stat(returns.filename)
             headers[0] = ['content-type', f'{returns.mimetype};']
@@ -251,7 +267,14 @@ async def speedapp_http(scope,receive,send):
             with open(returns.filename,mode='br') as f:
                 returns = bytes(f.read())
         else:
-            retuens=returns.encode()
+            retuens=returns.encode("utf-8")
+        await send({
+        'type': 'http.response.start',
+        'status': 200,
+        'headers': 
+            [[str(i2).encode("utf-8") for i2 in i] for i in headers]
+        
+    })
         await send({
             'type': 'http.response.body',
             'body': returns,
@@ -275,22 +298,4 @@ async def speedapp(scope, receive, send):
                     await pagefunc["WebSocket"].receive(send,event)
         await aaaaaaaa()
 
-"""if True:
-    #__name__=="__main__":
-    @get
-    async def getaa(e):
-        cookie_make("hello","pinko")
-        #return """<form method="post"><input name="aa"><input type="submit">"""
-        return file("新しいテキスト ドキュメント.txt")
-    @post
-    async def getaa(e):
-        return f"""{str(e.post)}<form method="post"><input name="bb"><input name="aa"><input type="submit">"""
 
-    appl=speedapp
-    """"""
-    cli=sys.argv
-    if cli[1]=="--set":
-        while True:
-            time.sleep(int(cli[3]))
-            os.system(cli[2])
-"""
