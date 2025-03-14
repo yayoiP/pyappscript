@@ -267,7 +267,7 @@ async def speedapp_http(scope,receive,send):
             with open(returns.filename,mode='br') as f:
                 returns = bytes(f.read())
         else:
-            retuens=returns.encode("utf-8")
+            returns=returns.encode("utf-8")
         await send({
         'type': 'http.response.start',
         'status': 200,
