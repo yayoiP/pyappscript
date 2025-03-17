@@ -1,2 +1,0 @@
-## なぜpyappscript
-pyappscriptはpythonのウェブ開発
