@@ -14,7 +14,7 @@ except ImportError:
 __version__="0.01"
 
 
-"""     super eazy web framework    """
+"""     gas風    """
 """     jinja template engine     """
 """ debugモード, db管理, websockets, gas, session エラーハンドリング準備"""
 class request():
@@ -297,5 +297,6 @@ async def speedapp(scope, receive, send):
                 if event['type'] == 'websocket.receive':
                     await pagefunc["WebSocket"].receive(send,event)
         await aaaaaaaa()
+
 
 
