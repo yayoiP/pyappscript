@@ -107,7 +107,7 @@ def session_set():
     return sessionid
 
 def template(filename,**data):
-    eenv = Environment(loader=FileSystemLoader('./', encoding='utf8'))
+    env = Environment(loader=FileSystemLoader('./', encoding='utf8'))
     template = env.get_template(setting["template"]+filename)
     output=template.render(data)
     return output
@@ -297,6 +297,7 @@ async def speedapp(scope, receive, send):
                 if event['type'] == 'websocket.receive':
                     await pagefunc["WebSocket"].receive(send,event)
         await aaaaaaaa()
+
 
 
 
