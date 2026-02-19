@@ -9,6 +9,7 @@ try:
     from urllib.parse import parse_qs,unquote
 except ImportError:
     from urlparse import parse_qs,unquote
+from collections import defaultdict, deque
 
 
 __version__="0.01"
@@ -17,6 +18,21 @@ __version__="0.01"
 """     gas風    """
 """     jinja template engine     """
 """ debugモード, db管理, websockets, gas, session エラーハンドリング準備"""
+
+#簡易DoS対策の予定
+IP_LOGS = defaultdict(lambda: deque())
+MAX_REQ_PER_SECOND = 25
+rate_limit=True
+
+def rate_limiter(ip):
+    now = time.time()
+    log = IP_LOGS[ip]
+    while log and log[0] < now - 1:
+        log.popleft()
+    if len(log) >= MAX_REQ_PER_SECOND:
+        return False
+    log.append(now)
+
 class request():
     def __init__(self,method,path,ip,ua,host,cookie,header,data,postdata,sessionid):
         self.method=method
@@ -156,6 +172,9 @@ headers=[]
 def app(environ, start_response):
     setup_testing_defaults(environ)
     global apps,headers
+    if rate_limit and rate_limiter(environ["REMOTE_ADDR"]):
+        start_response("429 Too Many Requests", [("Content-Type", "text/plain")])
+        return [b"Too Many Requests"]
     apps=environ
     status = '200 OK'
     headers = [('Content-type', 'text/html; charset=utf-8')]
@@ -297,6 +316,7 @@ async def speedapp(scope, receive, send):
                 if event['type'] == 'websocket.receive':
                     await pagefunc["WebSocket"].receive(send,event)
         await aaaaaaaa()
+
 
 
 
