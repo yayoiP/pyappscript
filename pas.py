@@ -32,6 +32,7 @@ def rate_limiter(ip):
     if len(log) >= MAX_REQ_PER_SECOND:
         return False
     log.append(now)
+    return True
 
 class request():
     def __init__(self,method,path,ip,ua,host,cookie,header,data,postdata,sessionid):
@@ -172,7 +173,7 @@ headers=[]
 def app(environ, start_response):
     setup_testing_defaults(environ)
     global apps,headers
-    if rate_limit and rate_limiter(environ["REMOTE_ADDR"]):
+    if rate_limit and not rate_limiter(environ["REMOTE_ADDR"]):
         start_response("429 Too Many Requests", [("Content-Type", "text/plain")])
         return [b"Too Many Requests"]
     apps=environ
@@ -316,6 +317,7 @@ async def speedapp(scope, receive, send):
                 if event['type'] == 'websocket.receive':
                     await pagefunc["WebSocket"].receive(send,event)
         await aaaaaaaa()
+
 
 
 
